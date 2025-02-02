@@ -1,4 +1,5 @@
-#include <iostream>
+#include <bits/stdc++.h>
+using namespace std;
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -8,10 +9,16 @@ int main() {
   // Uncomment this block to pass the first stage
 
   while(true){
-    std::cout << "$ ";
-    std::string input;
-    std::getline(std::cin, input);
-    std::cout << input << ": command not found" << std::endl;
+    cout << "$ ";
+
+    string input;
+    getline(std::cin, input);
+
+    if(input == "exit 0") return 0;
+
+    cout << input << ": command not found" << std::endl;
   }
-  
+
+
+  return 0;
 }
