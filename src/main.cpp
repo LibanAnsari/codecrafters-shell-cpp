@@ -6,19 +6,23 @@ int main() {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-  // Uncomment this block to pass the first stage
-
   while(true){
     cout << "$ ";
 
     string input;
-    getline(std::cin, input);
+    getline(cin, input);
 
     if(input == "exit 0") return 0;
 
-    cout << input << ": command not found" << std::endl;
-  }
+    string firstWord = input.substr(0, input.find(' ')); 
 
+    if(firstWord == "echo"){
+      cout << input.substr(input.find(' ')+1) << endl;
+    }else{
+      cout << input << ": command not found" << endl;
+    }
+
+  }
 
   return 0;
 }
