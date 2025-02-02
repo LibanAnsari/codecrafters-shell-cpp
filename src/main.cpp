@@ -1,5 +1,25 @@
 #include <bits/stdc++.h>
+#include <filesystem>
 using namespace std;
+namespace fs = filesystem;
+
+string get_path(string command) {
+    // Get the PATH environment variable
+    string path_env = getenv("PATH");
+    stringstream ss(path_env);
+
+    string path;
+    // Split the PATH variable by ':' and check each directory
+    while(getline(ss, path, ':')){
+        string abs_path = path + "/" + command;
+
+        // Check if the command exists in the current directory
+        if(fs::exists(abs_path)){
+            return abs_path;
+        }
+    }
+    return "";
+}
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -17,18 +37,24 @@ int main() {
     string firstWord = input.substr(0, input.find(' ')); 
 
     if(firstWord == "type"){
-      string to_check = input.substr(5);
-      if(to_check == "echo" || to_check == "exit" || to_check == "type"){
-        cout << to_check << " is a shell builtin" << endl;
+      string cmd = input.substr(5, input.size());
+      if(cmd == "echo" || cmd == "exit" || cmd == "type"){
+        cout << cmd << " is a shell builtin" << endl;
       }else{
-        cout << to_check << ": not found" << endl;
+        string path = get_path(cmd);
+        if(!path.empty()){
+          cout << input.substr(5) << " is " << path << endl;
+        }else{
+          cout << cmd << ": not found" << endl;
+        }
+
       }
     }else if(firstWord == "echo"){
       cout << input.substr(input.find(' ')+1) << endl;
     }else{
       cout << input << ": command not found" << endl;
     }
-    
+
   }
 
   return 0;
