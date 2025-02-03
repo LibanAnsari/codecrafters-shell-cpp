@@ -47,12 +47,30 @@ int main() {
         }else{
           cout << cmd << ": not found" << endl;
         }
-
       }
     }else if(firstWord == "echo"){
       cout << input.substr(input.find(' ')+1) << endl;
     }else{
-      cout << input << ": command not found" << endl;
+      string cmd = input.substr(5, input.size());
+      string path = get_path(cmd);
+      if(path.empty()){
+        cout << input << ": command not found" << endl;
+      }else{
+        string full = path + input.substr(cmd.length());
+        char buffer[128];
+        string result;
+
+        FILE *pipe = popen(full.c_str(), "r");
+
+        while(!feof(pipe)){
+          if(fgets(buffer, 128, pipe) != NULL){
+            cout << buffer;
+          }
+        }
+        pclose(pipe);
+      }
+
+      cout << input << ": not found" << endl;
     }
 
   }
