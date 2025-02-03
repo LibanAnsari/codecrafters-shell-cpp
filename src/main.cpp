@@ -1,88 +1,72 @@
-#include <bits/stdc++.h>
-#include <filesystem>
-using namespace std;
-namespace fs = filesystem;
-
-vector<string> split_string(const string &s, char delimiter){
-  stringstream ss(s);
-  vector<string> return_vect;
-  string token;
-  while(getline(ss, token, delimiter)){
-    return_vect.push_back(token);
-  }
-  return return_vect;
+#include <iostream>
+#include <cstdlib>
+#include <sstream>
+#include <vector>
+#include <fstream>
+std::vector<std::string> split_string(const std::string &s, char delimiter){
+   std::stringstream ss(s);
+    std::vector<std::string> return_vect;
+    std::string token;
+    while(getline(ss, token, delimiter)){
+      return_vect.push_back(token);
+    }
+    return return_vect;
 }
-
-string get_path(string command){
-  // Get the PATH environment variable
-  string path_env = getenv("PATH");
-  stringstream ss(path_env);
-
-  string path;
-  // Split the PATH variable by ':' and check each directory
-  while(getline(ss, path, ':')){
-      string abs_path = path + "/" + command;
-
-      // Check if the command exists in the current directory
-      if(fs::exists(abs_path)){
-          return abs_path;
+void handle_type_command(std::vector<std::string> arguments, std::vector<std::string> path){
+  if(arguments[1] == "echo" || arguments[1] == "exit" || arguments[1] == "type"){
+        std::cout << arguments[1] << " is a shell builtin\n";
+  }else{
+    std::string filepath;
+    for(int i = 0; i < path.size(); i++){
+      filepath = path[i] + '/' + arguments[1];
+      std::ifstream file(filepath);
+      if(file.good()){
+        std::cout << arguments[1] << " is " << filepath << "\n";
+        return;
       }
+    }
+    std::cout << arguments[1] << ": not found\n";
   }
-  return "";
 }
-
-int main(){
+int main() {
+  // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
-
+  std::string path_string = getenv("PATH");
+  std::vector<std::string> path = split_string(path_string, ':');
+  std::string input;
+  std::vector<std::string> arguments;
   while(true){
-      cout << "$ ";
-      string input;
-      getline(cin, input);
-
-      if(input == "exit 0") return 0;
-
-      string path_env = getenv("PATH");
-      vector<string> path = split_string(path_env, ':');
-      
-      istringstream iss(input);
-      vector<string> tokens;
-      string token;
-      while(iss >> token) tokens.push_back(token);
-      
-      if(tokens.empty()) continue;
-      
-      string command = tokens[0];
-      
-      if(command == "type"){
-        if(tokens.size() < 2) continue;
-        string cmd = tokens[1];
-        if(cmd == "echo" or cmd == "exit" or cmd == "type"){
-          cout << cmd << " is a shell builtin" << endl;
-        }else{
-          string path = get_path(cmd);
-          if(!path.empty()){
-            cout << cmd << " is " << path << endl;
-          }else{
-            cout << cmd << ": not found" << endl;
-          }
+    std::cout << "$ ";
+    std::getline(std::cin, input);
+    if(input == "exit 0"){
+      return 0;
+    }
+    arguments = split_string(input, ' ');
+    if(arguments[0] == "echo"){
+      for(int i = 1; i < arguments.size(); i++){
+        if(i == arguments.size() -1)
+          std::cout << arguments[i] << "\n";
+        else
+          std::cout << arguments[i] << " ";
+      }
+    }else if(arguments[0] == "type"){
+      handle_type_command(arguments, path);
+    }else{
+      std::string filepath;
+      for(int i = 0; i < path.size(); i++){
+        filepath = path[i] + '/' + arguments[0];
+        std::ifstream file(filepath);
+        if(file.good()){
+          std::string command = "exec " + path[i] + '/' + input;
+          std::system(command.c_str());
+          break;
         }
-      }else if(command == "echo"){
-        cout << input.substr(input.find(' ') + 1) << endl;
-      }else{
-        string filepath;
-        for(int i = 0; i < path.size(); i++){
-          filepath = path[i] + '/' + tokens[0];
-          ifstream file(filepath);
-          if(file.good()){
-            string command = "exec " + path[i] + '/' + input;
-            system(command.c_str());
-            break;
-          }else if(i == path.size() - 1){
-            cout << tokens[0] << ": not found" << endl;
-          }
+        else if(i == path.size() - 1){
+          std::cout << arguments[0] << ": not found\n";
         }
       }
+    }
   }
-  return 0;
+  
 }
