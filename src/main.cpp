@@ -57,7 +57,7 @@ int main(){
         cout << input << ": command not found" << endl;
       }else{
         string args = input.substr(cmd.length());
-        string full = path + args;
+        string full = "./" + cmd + args; // Use only the executable name and arguments
         char buffer[128];
         string result;
 
