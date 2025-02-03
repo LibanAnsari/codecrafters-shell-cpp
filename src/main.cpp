@@ -50,7 +50,7 @@ int main(){
       if(tokens.size() < 2)
         continue;
       string cmd = tokens[1];
-      if(cmd == "echo" or cmd == "exit" or cmd == "type"){
+      if(cmd == "echo" or cmd == "exit" or cmd == "type" or cmd == "pwd"){
         cout << cmd << " is a shell builtin" << endl;
       }else{
         string path = get_path(cmd);
@@ -62,10 +62,14 @@ int main(){
       }
     }else if(command == "echo"){
       cout << input.substr(input.find(' ') + 1) << endl;
+    }else if(command == "pwd"){
+      string cwd = fs::current_path().string();
+      cout << cwd << endl;
     }else{
-      string path = get_path(command);
+      string cmd = tokens[0];
+      string path = get_path(cmd);
       if(path.empty()){
-        cout << command << ": command not found" << endl;
+        cout << cmd << ": command not found" << endl;
       }else{
         FILE *pipe = popen(input.c_str(), "r");
         if(!pipe){
