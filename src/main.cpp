@@ -53,18 +53,18 @@ int main(){
     }else{
       string cmd = input.substr(0, input.find(' '));
       string path = get_path(cmd);
-      if(path.empty()){
+      if (path.empty()) {
         cout << input << ": command not found" << endl;
-      }else{
+      } else {
         string args = input.substr(cmd.length());
-        string full = "./" + cmd + args; // Use only the executable name and arguments
+        string full = path + args; // Use the full path to the executable
         char buffer[128];
         string result;
 
         FILE *pipe = popen(full.c_str(), "r");
 
-        while(!feof(pipe)){
-          if(fgets(buffer, 128, pipe) != NULL){
+        while (!feof(pipe)) {
+          if (fgets(buffer, 128, pipe) != NULL) {
             cout << buffer;
           }
         }
