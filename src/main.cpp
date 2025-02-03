@@ -51,7 +51,7 @@ int main() {
     }else if(firstWord == "echo"){
       cout << input.substr(input.find(' ')+1) << endl;
     }else{
-      string cmd = input.substr(5, input.size());
+      string cmd = input.substr(0, input.find(' '));
       string path = get_path(cmd);
       if(path.empty()){
         cout << input << ": command not found" << endl;
@@ -69,8 +69,6 @@ int main() {
         }
         pclose(pipe);
       }
-
-      cout << input << ": not found" << endl;
     }
 
   }
