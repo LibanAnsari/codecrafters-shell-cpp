@@ -21,7 +21,7 @@ string get_path(string command) {
     return "";
 }
 
-int main() {
+int main(){
   // Flush after every std::cout / std:cerr
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
@@ -56,7 +56,8 @@ int main() {
       if(path.empty()){
         cout << input << ": command not found" << endl;
       }else{
-        string full = path + input.substr(cmd.length());
+        string args = input.substr(cmd.length());
+        string full = path + args;
         char buffer[128];
         string result;
 
