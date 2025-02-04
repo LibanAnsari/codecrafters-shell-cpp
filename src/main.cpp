@@ -34,7 +34,7 @@ int main(){
     string input;
     getline(cin, input);
 
-    if (input == "exit 0") return 0;
+    if(input == "exit 0") return 0;
 
     istringstream iss(input);
     vector<string> tokens;
@@ -50,7 +50,7 @@ int main(){
       if(tokens.size() < 2)
         continue;
       string cmd = tokens[1];
-      if(cmd == "echo" or cmd == "exit" or cmd == "type" or cmd == "pwd"){
+      if(cmd == "echo" or cmd == "exit" or cmd == "type" or cmd == "pwd" or cmd == "cd"){
         cout << cmd << " is a shell builtin" << endl;
       }else{
         string path = get_path(cmd);
@@ -65,6 +65,12 @@ int main(){
     }else if(command == "pwd"){
       string cwd = fs::current_path().string();
       cout << cwd << endl;
+    }else if(command == "cd"){
+      if(fs::exists(tokens[1])){
+        fs::current_path(tokens[1]);
+      }else{
+        cout << "cd: " << tokens[1] << ": No such file or directory" << endl;
+      }
     }else{
       string cmd = tokens[0];
       string path = get_path(cmd);
