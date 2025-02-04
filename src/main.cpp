@@ -66,11 +66,36 @@ int main(){
       string cwd = fs::current_path().string();
       cout << cwd << endl;
     }else if (command == "cd") {
-      if(fs::exists(tokens[1])){
-        fs::current_path(tokens[1]);
-      }else{
-        cout << "cd: " << tokens[1] << ": No such file or directory" << endl;
+      if(tokens.size() < 2){
+        cerr << "cd: missing argument" << endl;
+        continue;
       }
+      string dir = tokens[1];
+
+      // If User's Home Directory
+      if(dir == "~"){
+        fs::current_path(getenv("HOME"));
+        continue;
+      }
+
+      // Check if the directory exists
+      bool exists = fs::exists(dir);
+
+      if(!exists){
+        cerr << "cd: " << dir << ": No such file or directory" << endl;
+        continue;
+      }
+      
+      // Check if the path is a directory
+      bool is_dir = fs::is_directory(dir);
+      
+      if(!is_dir){
+        cerr << "cd: " << dir << ": Not a directory" << endl;
+        continue;
+      }
+
+      // Attempt to change directory and handle errors
+      fs::current_path(dir);
     }else{
       string cmd = tokens[0];
       string path = get_path(cmd);
