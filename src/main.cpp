@@ -65,11 +65,40 @@ int main(){
     }else if(command == "pwd"){
       string cwd = fs::current_path().string();
       cout << cwd << endl;
-    }else if(command == "cd"){
-      if(fs::exists(tokens[1])){
-        fs::current_path(tokens[1]);
-      }else{
-        cout << "cd: " << tokens[1] << ": No such file or directory" << endl;
+    }else if (command == "cd") {
+      if(tokens.size() < 2){
+        cerr << "cd: missing argument" << endl;
+        continue;
+      }
+      string dir = tokens[1];
+      error_code ec;
+
+      // Check if the directory exists
+      bool exists = fs::exists(dir, ec);
+      if(ec){
+        cerr << "cd: " << dir << ": " << ec.message() << endl;
+        continue;
+      }
+      if(!exists){
+        cerr << "cd: " << dir << ": No such file or directory" << endl;
+        continue;
+      }
+
+      // Check if the path is a directory
+      bool is_dir = fs::is_directory(dir, ec);
+      if(ec){
+        cerr << "cd: " << dir << ": " << ec.message() << endl;
+        continue;
+      }
+      if(!is_dir){
+        cerr << "cd: " << dir << ": Not a directory" << endl;
+        continue;
+      }
+
+      // Attempt to change directory and handle errors
+      fs::current_path(dir, ec);
+      if(ec){
+        cerr << "cd: " << dir << ": " << ec.message() << endl;
       }
     }else{
       string cmd = tokens[0];
