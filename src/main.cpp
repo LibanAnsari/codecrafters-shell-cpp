@@ -71,35 +71,25 @@ int main(){
         continue;
       }
       string dir = tokens[1];
-      error_code ec;
 
       // Check if the directory exists
-      bool exists = fs::exists(dir, ec);
-      if(ec){
-        cerr << "cd: " << dir << ": " << ec.message() << endl;
-        continue;
-      }
+      bool exists = fs::exists(dir);
+
       if(!exists){
         cerr << "cd: " << dir << ": No such file or directory" << endl;
         continue;
       }
 
       // Check if the path is a directory
-      bool is_dir = fs::is_directory(dir, ec);
-      if(ec){
-        cerr << "cd: " << dir << ": " << ec.message() << endl;
-        continue;
-      }
+      bool is_dir = fs::is_directory(dir);
+      
       if(!is_dir){
         cerr << "cd: " << dir << ": Not a directory" << endl;
         continue;
       }
 
       // Attempt to change directory and handle errors
-      fs::current_path(dir, ec);
-      if(ec){
-        cerr << "cd: " << dir << ": " << ec.message() << endl;
-      }
+      fs::current_path(dir);
     }else{
       string cmd = tokens[0];
       string path = get_path(cmd);
