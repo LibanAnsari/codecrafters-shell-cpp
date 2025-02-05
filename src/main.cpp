@@ -5,7 +5,7 @@ namespace fs = filesystem;
 
 vector<string> parse_tokens(const string &input){
   vector<string> tokens;
-  string currtoken;
+  string currtoken = "";
   bool in_quote = false;
 
   for(char c : input){
@@ -25,6 +25,11 @@ vector<string> parse_tokens(const string &input){
       }
     }
   }
+
+  if(!currtoken.empty()) {
+    tokens.push_back(currtoken);
+  }
+
   return tokens;
 }
 
