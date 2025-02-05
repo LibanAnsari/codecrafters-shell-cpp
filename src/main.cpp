@@ -106,7 +106,7 @@ int main(){
 
     if(tokens.empty())continue;
 
-    // for(auto i : tokens) cout << i << endl;
+    // for(auto i : tokens) cout << i << endl; (tokens debugger)
 
     string command = tokens[0];
 
