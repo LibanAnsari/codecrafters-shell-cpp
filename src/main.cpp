@@ -10,7 +10,8 @@ vector<string> parse_tokens(const string &input){ // basically istringstream but
   bool in_doublequote = false;
   bool escape_next = false;
 
-  for(char c : input){
+  for(int i = 0 ; i < input.size() ; i++){
+    char c = input[i];
     if(escape_next){
         currtoken += c;
         escape_next = false;
@@ -20,8 +21,23 @@ vector<string> parse_tokens(const string &input){ // basically istringstream but
       if(c == '\'') in_singlequote = false;
       else currtoken += c;
     }else if(in_doublequote){
-      if(c == '"') in_doublequote = false;
-      else currtoken += c;
+      if(c == '\\'){
+        if(i + 1 < input.size()){
+          char next_c = input[i + 1];
+          if(next_c == '\\' or next_c == '$' or next_c == '"' or next_c == '\n'){
+            currtoken += next_c;
+            i++; // Skip the next character
+          }else{
+            currtoken += c; // Add backslash as literal
+          }
+        }else{
+          currtoken += c; // Backslash at end of input
+        }
+      }else if(c == '"'){
+        in_doublequote = false;
+      }else{
+        currtoken += c;
+      }
     }else if(c ==   '\\'){
       currtoken += ' ';
     }else{
