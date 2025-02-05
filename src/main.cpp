@@ -3,6 +3,31 @@
 using namespace std;
 namespace fs = filesystem;
 
+vector<string> parse_tokens(const string &input){
+  vector<string> tokens;
+  string currtoken;
+  bool in_quote = false;
+
+  for(char c : input){
+    if(in_quote){
+      if(c == '\'') in_quote = false;
+      else currtoken += c;
+    }else{
+      if(c == '\''){
+        in_quote = true;
+      }else if(isspace(c)){
+        if(!currtoken.empty()){
+          tokens.push_back(currtoken);
+          currtoken.clear();
+        }
+      }else{
+        currtoken += c;
+      }
+    }
+  }
+  return tokens;
+}
+
 string get_path(string command) {
   if(command.find('/') != string::npos){
     if(fs::exists(command) and fs::is_regular_file(command)){
@@ -34,15 +59,19 @@ int main(){
     string input;
     getline(cin, input);
 
+    if(input.empty()) continue;
+
     if(input == "exit 0") return 0;
 
     istringstream iss(input);
-    vector<string> tokens;
-    string token;
-    while(iss >> token)
-      tokens.push_back(token);
+    vector<string> tokens = parse_tokens(input);
+    // string token;
+    // while(iss >> token)
+    //   tokens.push_back(token);
 
     if(tokens.empty())continue;
+
+    // for(auto i : tokens) cout << i << endl;
 
     string command = tokens[0];
 
@@ -62,14 +91,12 @@ int main(){
       }
     }else if(command == "echo"){
       // cout << input.substr(input.find(' ') + 1) << endl;
-      if(input[5]=='\''){
-        cout << input.substr(6,input.length()-7) << endl;
-      }else if(input[5]=='\"'){
-        cout << input.substr(6,input.length()-7) << endl;
-      }else{
+      if(tokens.size() < 2) cout << endl;
+      else{
         for(int i = 1 ; i < tokens.size() ; i++){
-          if(!tokens[i].empty()) cout << tokens[i] << " ";
-        }cout << endl;
+          if (i > 1) cout << ' ';
+          cout << tokens[i];
+        } cout << endl;
       }
     }else if(command == "pwd"){
       string cwd = fs::current_path().string();
