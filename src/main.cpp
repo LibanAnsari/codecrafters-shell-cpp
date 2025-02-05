@@ -8,14 +8,22 @@ vector<string> parse_tokens(const string &input){ // basically istringstream but
   string currtoken = "";
   bool in_singlequote = false;
   bool in_doublequote = false;
+  bool escape_next = false;
 
   for(char c : input){
-    if(in_singlequote){
+    if(escape_next){
+        currtoken += c;
+        escape_next = false;
+    }else if(c == '\\' and !in_singlequote and !in_doublequote){
+      escape_next = true;
+    }else if(in_singlequote){
       if(c == '\'') in_singlequote = false;
       else currtoken += c;
     }else if(in_doublequote){
       if(c == '"') in_doublequote = false;
       else currtoken += c;
+    }else if(c ==   '\\'){
+      currtoken += ' ';
     }else{
       if(c == '\''){
         in_singlequote = true;
