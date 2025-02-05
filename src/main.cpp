@@ -61,7 +61,16 @@ int main(){
         }
       }
     }else if(command == "echo"){
-      cout << input.substr(input.find(' ') + 1) << endl;
+      // cout << input.substr(input.find(' ') + 1) << endl;
+      if(input[5]=='\''){
+        cout << input.substr(6,input.length()-7) << endl;
+      }else if(input[5]=='\"'){
+        cout << input.substr(6,input.length()-7) << endl;
+      }else{
+        for(int i = 1 ; i < tokens.size() ; i++){
+          if(!tokens[i].empty()) cout << tokens[i] << " ";
+        }cout << endl;
+      }
     }else if(command == "pwd"){
       string cwd = fs::current_path().string();
       cout << cwd << endl;
