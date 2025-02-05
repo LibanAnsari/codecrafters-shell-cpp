@@ -3,18 +3,24 @@
 using namespace std;
 namespace fs = filesystem;
 
-vector<string> parse_tokens(const string &input){
+vector<string> parse_tokens(const string &input){ // basically istringstream but manual
   vector<string> tokens;
   string currtoken = "";
-  bool in_quote = false;
+  bool in_singlequote = false;
+  bool in_doublequote = false;
 
   for(char c : input){
-    if(in_quote){
-      if(c == '\'') in_quote = false;
+    if(in_singlequote){
+      if(c == '\'') in_singlequote = false;
+      else currtoken += c;
+    }else if(in_doublequote){
+      if(c == '"') in_doublequote = false;
       else currtoken += c;
     }else{
       if(c == '\''){
-        in_quote = true;
+        in_singlequote = true;
+      }else if(c == '"'){
+        in_doublequote = true;
       }else if(isspace(c)){
         if(!currtoken.empty()){
           tokens.push_back(currtoken);
@@ -95,7 +101,6 @@ int main(){
         }
       }
     }else if(command == "echo"){
-      // cout << input.substr(input.find(' ') + 1) << endl;
       if(tokens.size() < 2) cout << endl;
       else{
         for(int i = 1 ; i < tokens.size() ; i++){
