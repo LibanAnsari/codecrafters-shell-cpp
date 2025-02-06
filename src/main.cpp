@@ -221,7 +221,7 @@ int main() {
             fs::current_path(dir);
         } else {
             string cmd_str;
-            for (int i = 0; i < args.size(); ++i) {
+            for (size_t i = 0; i < args.size(); ++i) {
                 if (i > 0) cmd_str += ' ';
                 cmd_str += args[i];
             }
