@@ -4,74 +4,81 @@
 using namespace std;
 namespace fs = filesystem;
 
+// Tokenizes input while handling quotes and redirection operators
 vector<string> parse_tokens(const string &input) {
     vector<string> tokens;
-    string currtoken = "";
+    string currtoken;
     bool in_singlequote = false;
     bool in_doublequote = false;
     bool escape_next = false;
 
-    for (int i = 0; i < input.size(); i++) {
+    for (size_t i = 0; i < input.size(); ++i) {
         char c = input[i];
+
         if (escape_next) {
             currtoken += c;
             escape_next = false;
-        } else if (in_singlequote) {
-            if (c == '\'') {
-                in_singlequote = false;
-            } else {
-                currtoken += c;
-            }
-        } else if (in_doublequote) {
-            if (c == '\\') {
-                if (i + 1 < input.size()) {
-                    char next_c = input[i + 1];
-                    if (next_c == '\\' || next_c == '$' || next_c == '"' || next_c == '\n') {
-                        currtoken += next_c;
-                        i++;
-                    } else {
-                        currtoken += c;
-                    }
-                } else {
+        }
+        else if (in_singlequote) {
+            if (c == '\'') in_singlequote = false;
+            else currtoken += c;
+        }
+        else if (in_doublequote) {
+            if (c == '\\' && i + 1 < input.size()) {
+                char next = input[++i];
+                if (next == '\\' || next == '$' || next == '"' || next == '\n') {
+                    currtoken += next;
+                }
+                else {
                     currtoken += c;
+                    currtoken += next;
                 }
-            } else if (c == '"') {
+            }
+            else if (c == '"') {
                 in_doublequote = false;
-            } else {
+            }
+            else {
                 currtoken += c;
             }
-        } else if (c == '\\') {
+        }
+        else if (c == '\\') {
             escape_next = true;
-        } else {
-            if (c == '\'') {
-                in_singlequote = true;
-            } else if (c == '"') {
-                in_doublequote = true;
-            } else if (isspace(c)) {
-                if (!currtoken.empty()) {
-                    tokens.push_back(currtoken);
-                    currtoken.clear();
-                }
-            } else if (c == '>') {
-                if (!currtoken.empty()) {
-                    char last_char = currtoken.back();
-                    if (isdigit(last_char)) {
-                        string part = currtoken.substr(0, currtoken.size() - 1);
-                        string op = string(1, last_char) + ">";
-                        if (!part.empty()) {
-                            tokens.push_back(part);
+        }
+        else {
+            switch (c) {
+                case '\'': 
+                    in_singlequote = true;
+                    break;
+                case '"': 
+                    in_doublequote = true;
+                    break;
+                case '>':
+                    if (!currtoken.empty() && isdigit(currtoken.back())) {
+                        string num = string(1, currtoken.back());
+                        currtoken.pop_back();
+                        if (!currtoken.empty()) {
+                            tokens.push_back(currtoken);
                         }
-                        tokens.push_back(op);
-                    } else {
-                        tokens.push_back(currtoken);
+                        tokens.push_back(num + ">");
+                    }
+                    else {
+                        if (!currtoken.empty()) {
+                            tokens.push_back(currtoken);
+                        }
                         tokens.push_back(">");
                     }
                     currtoken.clear();
-                } else {
-                    tokens.push_back(">");
-                }
-            } else {
-                currtoken += c;
+                    break;
+                default:
+                    if (isspace(c)) {
+                        if (!currtoken.empty()) {
+                            tokens.push_back(currtoken);
+                            currtoken.clear();
+                        }
+                    }
+                    else {
+                        currtoken += c;
+                    }
             }
         }
     }
@@ -83,173 +90,164 @@ vector<string> parse_tokens(const string &input) {
     return tokens;
 }
 
-string get_path(string command) {
+// Finds the full path for a command using PATH environment variable
+string get_path(const string &command) {
     if (command.find('/') != string::npos) {
         if (fs::exists(command) && fs::is_regular_file(command)) {
             return fs::absolute(command).string();
-        } else {
-            return "";
         }
+        return "";
     }
 
-    string path_env = getenv("PATH");
-    stringstream ss(path_env);
+    stringstream ss(getenv("PATH"));
     string path;
-
     while (getline(ss, path, ':')) {
-        string abs_path = path + "/" + command;
-        if (fs::exists(abs_path) && fs::is_regular_file(abs_path)) {
-            return abs_path;
+        string fullpath = path + "/" + command;
+        if (fs::exists(fullpath) && fs::is_regular_file(fullpath)) {
+            return fullpath;
         }
     }
     return "";
 }
 
 int main() {
-    std::cout << std::unitbuf;
-    std::cerr << std::unitbuf;
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
 
     while (true) {
         cout << "$ ";
         string input;
-        getline(cin, input);
-
+        if (!getline(cin, input)) break;
         if (input.empty()) continue;
-
         if (input == "exit 0") return 0;
 
         vector<string> tokens = parse_tokens(input);
         if (tokens.empty()) continue;
 
+        // Parse command and redirection
         vector<string> args;
         string redirect_file;
-
         for (size_t i = 0; i < tokens.size();) {
             if (tokens[i] == ">" || tokens[i] == "1>") {
-                if (i + 1 < tokens.size()) {
-                    redirect_file = tokens[i + 1];
-                    i += 2;
-                } else {
-                    cerr << "Syntax error: missing filename for redirection." << endl;
+                if (++i < tokens.size()) {
+                    redirect_file = tokens[i++];
+                }
+                else {
+                    cerr << "Syntax error: missing redirect target\n";
                     redirect_file.clear();
                     break;
                 }
-            } else {
-                args.push_back(tokens[i]);
-                i++;
+            }
+            else {
+                args.push_back(tokens[i++]);
             }
         }
 
         if (args.empty()) continue;
+        const string &command = args[0];
 
-        string command = args[0];
-
+        // Handle built-in commands
         if (command == "type") {
-            if (args.size() < 2) continue;
-            string cmd = args[1];
-            ostream *output = &cout;
-            ofstream out_file;
+            ostream *out = &cout;
+            ofstream file;
             if (!redirect_file.empty()) {
-                out_file.open(redirect_file);
-                if (!out_file) {
-                    cerr << "Error opening file for redirection." << endl;
-                    continue;
-                }
-                output = &out_file;
+                file.open(redirect_file);
+                out = file.is_open() ? &file : &cerr;
             }
-            if (cmd == "echo" || cmd == "exit" || cmd == "type" || cmd == "pwd" || cmd == "cd") {
-                *output << cmd << " is a shell builtin" << endl;
-            } else {
-                string path = get_path(cmd);
-                if (!path.empty()) {
-                    *output << cmd << " is " << path << endl;
-                } else {
-                    *output << cmd << ": not found" << endl;
-                }
-            }
-        } else if (command == "echo") {
-            ostream *output = &cout;
-            ofstream out_file;
-            if (!redirect_file.empty()) {
-                out_file.open(redirect_file);
-                if (!out_file) {
-                    cerr << "Error opening file for redirection." << endl;
-                    continue;
-                }
-                output = &out_file;
-            }
+
             if (args.size() < 2) {
-                *output << endl;
-            } else {
-                for (size_t i = 1; i < args.size(); ++i) {
-                    if (i > 1) *output << ' ';
-                    *output << args[i];
+                *out << "type: missing argument\n";
+            }
+            else {
+                const string &target = args[1];
+                const set<string> builtins = {"echo", "exit", "type", "pwd", "cd"};
+                if (builtins.count(target)) {
+                    *out << target << " is a shell builtin\n";
                 }
-                *output << endl;
-            }
-        } else if (command == "pwd") {
-            ostream *output = &cout;
-            ofstream out_file;
-            if (!redirect_file.empty()) {
-                out_file.open(redirect_file);
-                if (!out_file) {
-                    cerr << "Error opening file for redirection." << endl;
-                    continue;
+                else {
+                    string path = get_path(target);
+                    *out << target << (path.empty() ? ": not found" : " is " + path) << '\n';
                 }
-                output = &out_file;
-            }
-            string cwd = fs::current_path().string();
-            *output << cwd << endl;
-        } else if (command == "cd") {
-            if (args.size() < 2) {
-                cerr << "cd: missing argument" << endl;
-                continue;
-            }
-            string dir = args[1];
-            if (dir == "~") {
-                fs::current_path(getenv("HOME"));
-                continue;
-            }
-            if (!fs::exists(dir)) {
-                cerr << "cd: " << dir << ": No such file or directory" << endl;
-                continue;
-            }
-            if (!fs::is_directory(dir)) {
-                cerr << "cd: " << dir << ": Not a directory" << endl;
-                continue;
-            }
-            fs::current_path(dir);
-        } else {
-            string cmd_str;
-            for (size_t i = 0; i < args.size(); ++i) {
-                if (i > 0) cmd_str += ' ';
-                cmd_str += args[i];
-            }
-            FILE *pipe = popen(cmd_str.c_str(), "r");
-            if (!pipe) {
-                cerr << "Error executing command" << endl;
-                continue;
-            }
-            char buffer[128];
-            string output_str;
-            while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-                output_str += buffer;
-            }
-            int status = pclose(pipe);
-            if (!redirect_file.empty()) {
-                ofstream out_file(redirect_file);
-                if (out_file) {
-                    out_file << output_str;
-                } else {
-                    cerr << "Error opening file for redirection." << endl;
-                }
-            } else {
-                cout << output_str;
-            }
-            if (status != 0) {
-                cerr << "Command exited with status " << status << endl;
             }
         }
+        else if (command == "echo") {
+            ostream *out = &cout;
+            ofstream file;
+            if (!redirect_file.empty()) {
+                file.open(redirect_file);
+                out = file.is_open() ? &file : &cerr;
+            }
+
+            for (size_t i = 1; i < args.size(); ++i) {
+                if (i > 1) *out << ' ';
+                *out << args[i];
+            }
+            *out << '\n';
+        }
+        else if (command == "pwd") {
+            ostream *out = &cout;
+            ofstream file;
+            if (!redirect_file.empty()) {
+                file.open(redirect_file);
+                out = file.is_open() ? &file : &cerr;
+            }
+            *out << fs::current_path().string() << '\n';
+        }
+        else if (command == "cd") {
+            if (args.size() < 2) {
+                cerr << "cd: missing argument\n";
+                continue;
+            }
+
+            string dir = args[1];
+            if (dir == "~") dir = getenv("HOME");
+
+            error_code ec;
+            fs::current_path(dir, ec);
+            if (ec) {
+                cerr << "cd: " << dir << ": " << ec.message() << '\n';
+            }
+        }
+        // Handle external commands
+        else {
+            string cmd_path = get_path(command);
+            if (cmd_path.empty()) {
+                cerr << command << ": command not found\n";
+                continue;
+            }
+
+            // Rebuild command string for popen
+            string cmd_line;
+            for (const auto &arg : args) {
+                cmd_line += (arg.find(' ') != string::npos) ? ("\"" + arg + "\"") : arg;
+                cmd_line += ' ';
+            }
+            if (!cmd_line.empty()) cmd_line.pop_back();
+
+            // Execute command and capture output
+            FILE *pipe = popen(cmd_line.c_str(), "r");
+            if (!pipe) {
+                cerr << "Error executing command\n";
+                continue;
+            }
+
+            string output;
+            char buffer[128];
+            while (fgets(buffer, sizeof(buffer), pipe)) {
+                output += buffer;
+            }
+
+            // Handle output redirection
+            if (!redirect_file.empty()) {
+                ofstream(redirect_file) << output;
+            }
+            else {
+                cout << output;
+            }
+
+            pclose(pipe);
+        }
     }
+
     return 0;
 }
