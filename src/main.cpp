@@ -111,8 +111,8 @@ string get_path(const string &command) {
 }
 
 int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
+    std::cout << std::unitbuf;
+    std::cerr << std::unitbuf;
 
     while (true) {
         cout << "$ ";
