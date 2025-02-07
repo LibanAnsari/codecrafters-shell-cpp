@@ -102,7 +102,7 @@ string get_path(string command){
 }
 
 bool completeCommand(string &command){
-  for (auto cmd : command){
+  for (char cmd : command){
     if (cmd.find(command) != string::npos){
       cout << "\r$ " << cmd << " ";
       command = cmd;
