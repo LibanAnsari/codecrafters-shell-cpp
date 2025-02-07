@@ -5,6 +5,8 @@
 using namespace std;
 namespace fs = filesystem;
 
+vector<string> commandList = {"type", "pwd", "cd", "echo", "exit"};
+
 vector<string> parse_tokens(const string &input){ // basically istringstream but manual
   vector<string> tokens;
   string currtoken = "";
@@ -102,15 +104,16 @@ string get_path(string command){
 }
 
 bool completeCommand(string &command) {
-    for (const string &cmd : command) {
-        if (cmd.find(command) == 0) { // Check if command is a prefix
-            cout << "\r$ " << cmd << " ";
-            command = cmd; // Update command to the completed version
-            return true;
-        }
-    }
-    return false;
+  for (const string &cmd : commandList) {
+      if (cmd.find(command) == 0) { // Check if command is a prefix
+          cout << "\r$ " << cmd << " ";
+          command = cmd; // Update command to the completed version
+          return true;
+      }
+  }
+  return false;
 }
+
 
 void enableRawMode(){
   termios term;
