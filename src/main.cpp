@@ -1,4 +1,6 @@
 #include <bits/stdc++.h>
+#include <termios.h>
+#include <unistd.h>
 #include <filesystem>
 using namespace std;
 namespace fs = filesystem;
