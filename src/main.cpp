@@ -101,6 +101,17 @@ string get_path(string command){
   return "";
 }
 
+bool completeCommand(string &command){
+  for (auto cmd : commands){
+    if (cmd.find(command) != string::npos){
+      cout << "\r$ " << cmd << " ";
+      command = cmd;
+      return true;
+    }
+  }
+  return false;
+}
+
 void enableRawMode(){
   termios term;
   tcgetattr(STDIN_FILENO, &term);
@@ -132,21 +143,24 @@ void readInputWithTabSupport(std::string &input){
   while (true){
     c = getchar();
     if (c == '\n'){
-      std::cout << std::endl;
+      cout << std::endl;
       break;
     }
     else if (c == '\t'){
-      handleTabPress(input);
+      if (completeCommand(input))
+        input += " ";
+      else
+        cout << "\a";
     }
     else if (c == 127){
       if (!input.empty()){
         input.pop_back();
-        std::cout << "\b \b"; // Move cursor back, overwrite character with space, move cursor back again.
+        cout << "\b \b"; // Move cursor back, overwrite character with space, move cursor back again.
       }
     }
     else{
       input += c;
-      std::cout << c;
+      cout << c;
     }
   }
   disableRawMode();
