@@ -1,253 +1,186 @@
 #include <bits/stdc++.h>
 #include <filesystem>
-#include <fstream>
 using namespace std;
 namespace fs = filesystem;
 
-// Tokenizes input while handling quotes and redirection operators
-vector<string> parse_tokens(const string &input) {
-    vector<string> tokens;
-    string currtoken;
-    bool in_singlequote = false;
-    bool in_doublequote = false;
-    bool escape_next = false;
+vector<string> parse_tokens(const string &input){ // basically istringstream but manual
+  vector<string> tokens;
+  string currtoken = "";
+  bool in_singlequote = false;
+  bool in_doublequote = false;
+  bool escape_next = false;
 
-    for (size_t i = 0; i < input.size(); ++i) {
-        char c = input[i];
-
-        if (escape_next) {
-            currtoken += c;
-            escape_next = false;
+  for(int i = 0 ; i < input.size() ; i++){
+    char c = input[i];
+    if(escape_next){
+        currtoken += c;
+        escape_next = false;
+    }else if(c == '\\' and !in_singlequote and !in_doublequote){
+      escape_next = true;
+    }else if(in_singlequote){
+      if(c == '\'') in_singlequote = false;
+      else currtoken += c;
+    }else if(in_doublequote){
+      if(c == '\\'){
+        if(i + 1 < input.size()){
+          char next_c = input[i + 1];
+          if(next_c == '\\' or next_c == '$' or next_c == '"' or next_c == '\n'){
+            currtoken += next_c;
+            i++; // Skip the next character
+          }else{
+            currtoken += c; // Add backslash as literal
+          }
+        }else{
+          currtoken += c; // Backslash at end of input
         }
-        else if (in_singlequote) {
-            if (c == '\'') in_singlequote = false;
-            else currtoken += c;
+      }else if(c == '"'){
+        in_doublequote = false;
+      }else{
+        currtoken += c;
+      }
+    }else if(c ==   '\\'){
+      currtoken += ' ';
+    }else{
+      if(c == '\''){
+        in_singlequote = true;
+      }else if(c == '"'){
+        in_doublequote = true;
+      }else if(isspace(c)){
+        if(!currtoken.empty()){
+          tokens.push_back(currtoken);
+          currtoken.clear();
         }
-        else if (in_doublequote) {
-            if (c == '\\' && i + 1 < input.size()) {
-                char next = input[++i];
-                if (next == '\\' || next == '$' || next == '"' || next == '\n') {
-                    currtoken += next;
-                }
-                else {
-                    currtoken += c;
-                    currtoken += next;
-                }
-            }
-            else if (c == '"') {
-                in_doublequote = false;
-            }
-            else {
-                currtoken += c;
-            }
-        }
-        else if (c == '\\') {
-            escape_next = true;
-        }
-        else {
-            switch (c) {
-                case '\'': 
-                    in_singlequote = true;
-                    break;
-                case '"': 
-                    in_doublequote = true;
-                    break;
-                case '>':
-                    if (!currtoken.empty() && isdigit(currtoken.back())) {
-                        string num = string(1, currtoken.back());
-                        currtoken.pop_back();
-                        if (!currtoken.empty()) {
-                            tokens.push_back(currtoken);
-                        }
-                        tokens.push_back(num + ">");
-                    }
-                    else {
-                        if (!currtoken.empty()) {
-                            tokens.push_back(currtoken);
-                        }
-                        tokens.push_back(">");
-                    }
-                    currtoken.clear();
-                    break;
-                default:
-                    if (isspace(c)) {
-                        if (!currtoken.empty()) {
-                            tokens.push_back(currtoken);
-                            currtoken.clear();
-                        }
-                    }
-                    else {
-                        currtoken += c;
-                    }
-            }
-        }
+      }else{
+        currtoken += c;
+      }
     }
-
-    if (!currtoken.empty()) {
-        tokens.push_back(currtoken);
-    }
-
-    return tokens;
+  }
+  if(!currtoken.empty()) {
+    tokens.push_back(currtoken);
+  }
+  return tokens;
 }
 
-// Finds the full path for a command using PATH environment variable
-string get_path(const string &command) {
-    if (command.find('/') != string::npos) {
-        if (fs::exists(command) && fs::is_regular_file(command)) {
-            return fs::absolute(command).string();
-        }
-        return "";
+string get_path(string command) {
+  if(command.find('/') != string::npos){
+    if(fs::exists(command) and fs::is_regular_file(command)){
+      return fs::absolute(command).string();
+    }else{
+      return "";
     }
+  }
 
-    stringstream ss(getenv("PATH"));
-    string path;
-    while (getline(ss, path, ':')) {
-        string fullpath = path + "/" + command;
-        if (fs::exists(fullpath) && fs::is_regular_file(fullpath)) {
-            return fullpath;
-        }
+  string path_env = getenv("PATH");
+  stringstream ss(path_env);
+  string path;
+  while(getline(ss, path, ':')){
+    string abs_path = path + "/" + command;
+    if(fs::exists(abs_path) && fs::is_regular_file(abs_path)){
+      return abs_path;
     }
-    return "";
+  }
+  return "";
 }
 
-int main() {
-    std::cout << std::unitbuf;
-    std::cerr << std::unitbuf;
+int main(){
+  std::cout << std::unitbuf;
+  std::cerr << std::unitbuf;
 
-    while (true) {
-        cout << "$ ";
-        string input;
-        if (!getline(cin, input)) break;
-        if (input.empty()) continue;
-        if (input == "exit 0") return 0;
+  while(true){
+    cout << "$ ";
 
-        vector<string> tokens = parse_tokens(input);
-        if (tokens.empty()) continue;
+    string input;
+    getline(cin, input);
 
-        // Parse command and redirection
-        vector<string> args;
-        string redirect_file;
-        for (size_t i = 0; i < tokens.size();) {
-            if (tokens[i] == ">" || tokens[i] == "1>") {
-                if (++i < tokens.size()) {
-                    redirect_file = tokens[i++];
-                }
-                else {
-                    cerr << "Syntax error: missing redirect target\n";
-                    redirect_file.clear();
-                    break;
-                }
-            }
-            else {
-                args.push_back(tokens[i++]);
-            }
+    if(input.empty()) continue;
+
+    if(input == "exit 0") return 0;
+
+    vector<string> tokens = parse_tokens(input);
+    // istringstream iss(input);
+    // string token;
+    // while(iss >> token)
+    //   tokens.push_back(token);
+
+    if(tokens.empty())continue;
+
+    // for(auto i : tokens) cout << i << endl; (tokens debugger)
+
+    string command = tokens[0];
+    
+    if(command == "type"){
+      if(tokens.size() < 2)
+        continue;
+      string cmd = tokens[1];
+      if(cmd == "echo" or cmd == "exit" or cmd == "type" or cmd == "pwd" or cmd == "cd"){
+        cout << cmd << " is a shell builtin" << endl;
+      }else{
+        string path = get_path(cmd);
+        if(!path.empty()){
+          cout << cmd << " is " << path << endl;
+        }else{
+          cout << cmd << ": not found" << endl;
         }
-
-        if (args.empty()) continue;
-        const string &command = args[0];
-
-        // Handle built-in commands
-        if (command == "type") {
-            ostream *out = &cout;
-            ofstream file;
-            if (!redirect_file.empty()) {
-                file.open(redirect_file);
-                out = file.is_open() ? &file : &cerr;
-            }
-
-            if (args.size() < 2) {
-                *out << "type: missing argument\n";
-            }
-            else {
-                const string &target = args[1];
-                const set<string> builtins = {"echo", "exit", "type", "pwd", "cd"};
-                if (builtins.count(target)) {
-                    *out << target << " is a shell builtin\n";
-                }
-                else {
-                    string path = get_path(target);
-                    *out << target << (path.empty() ? ": not found" : " is " + path) << '\n';
-                }
-            }
+      }
+    }else if(command == "echo"){
+      if(tokens.size() < 2) cout << endl;
+      else{
+        for(int i = 1 ; i < tokens.size() ; i++){
+          if (i > 1) cout << ' ';
+          cout << tokens[i];
+        } cout << endl;
+      }
+    }else if(command == "pwd"){
+      string cwd = fs::current_path().string();
+      cout << cwd << endl;
+    }else if (command == "cd") {
+      if(tokens.size() < 2){
+        cerr << "cd: missing argument" << endl;
+        continue;
+      }
+      string dir = tokens[1];
+      // If User's Home Directory
+      if(dir == "~"){
+        fs::current_path(getenv("HOME"));
+        continue;
+      }
+      // Check if the directory exists
+      bool exists = fs::exists(dir);
+      if(!exists){
+        cerr << "cd: " << dir << ": No such file or directory" << endl;
+        continue;
+      }
+      
+      // Check if the path is a directory
+      bool is_dir = fs::is_directory(dir);
+      
+      if(!is_dir){
+        cerr << "cd: " << dir << ": Not a directory" << endl;
+        continue;
+      }
+      // Attempt to change directory and handle errors
+      fs::current_path(dir);
+    }else{
+      string cmd = tokens[0];
+      string path = get_path(cmd);
+      if(path.empty()){
+        cout << cmd << ": command not found" << endl;
+      }else{
+        FILE *pipe = popen(input.c_str(), "r");
+        if(!pipe){
+          cerr << "Error executing command" << endl;
+          continue;
         }
-        else if (command == "echo") {
-            ostream *out = &cout;
-            ofstream file;
-            if (!redirect_file.empty()) {
-                file.open(redirect_file);
-                out = file.is_open() ? &file : &cerr;
-            }
-
-            for (size_t i = 1; i < args.size(); ++i) {
-                if (i > 1) *out << ' ';
-                *out << args[i];
-            }
-            *out << '\n';
+        char buffer[128];
+        while(fgets(buffer, sizeof(buffer), pipe) != nullptr){
+          cout << buffer;
         }
-        else if (command == "pwd") {
-            ostream *out = &cout;
-            ofstream file;
-            if (!redirect_file.empty()) {
-                file.open(redirect_file);
-                out = file.is_open() ? &file : &cerr;
-            }
-            *out << fs::current_path().string() << '\n';
+        int status = pclose(pipe);
+        if(status != 0){
+          cerr << "Command exited with status " << status << endl;
         }
-        else if (command == "cd") {
-            if (args.size() < 2) {
-                cerr << "cd: missing argument\n";
-                continue;
-            }
-
-            string dir = args[1];
-            if (dir == "~") dir = getenv("HOME");
-
-            error_code ec;
-            fs::current_path(dir, ec);
-            if (ec) {
-                cerr << "cd: " << dir << ": " << ec.message() << '\n';
-            }
-        }
-        // Handle external commands
-        else {
-            string cmd_path = get_path(command);
-            if (cmd_path.empty()) {
-                cerr << command << ": command not found\n";
-                continue;
-            }
-
-            // Rebuild command string for popen
-            string cmd_line;
-            for (const auto &arg : args) {
-                cmd_line += (arg.find(' ') != string::npos) ? ("\"" + arg + "\"") : arg;
-                cmd_line += ' ';
-            }
-            if (!cmd_line.empty()) cmd_line.pop_back();
-
-            // Execute command and capture output
-            FILE *pipe = popen(cmd_line.c_str(), "r");
-            if (!pipe) {
-                cerr << "Error executing command\n";
-                continue;
-            }
-
-            string output;
-            char buffer[128];
-            while (fgets(buffer, sizeof(buffer), pipe)) {
-                output += buffer;
-            }
-
-            // Handle output redirection
-            if (!redirect_file.empty()) {
-                ofstream(redirect_file) << output;
-            }
-            else {
-                cout << output;
-            }
-
-            pclose(pipe);
-        }
+      }
     }
-
-    return 0;
+  }
+  return 0;
 }
