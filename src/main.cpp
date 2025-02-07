@@ -101,15 +101,15 @@ string get_path(string command){
   return "";
 }
 
-bool completeCommand(string &command){
-  for (char cmd : command){
-    if (cmd.find(command) != string::npos){
-      cout << "\r$ " << cmd << " ";
-      command = cmd;
-      return true;
+bool completeCommand(string &command) {
+    for (const string &cmd : command) {
+        if (cmd.find(command) == 0) { // Check if command is a prefix
+            cout << "\r$ " << cmd << " ";
+            command = cmd; // Update command to the completed version
+            return true;
+        }
     }
-  }
-  return false;
+    return false;
 }
 
 void enableRawMode(){
@@ -137,13 +137,13 @@ void handleTabPress(std::string &input){
   }
 }
 
-void readInputWithTabSupport(std::string &input){
+void readInputWithTabSupport(string &input){
   enableRawMode();
   char c;
   while (true){
     c = getchar();
     if (c == '\n'){
-      cout << std::endl;
+      cout << endl;
       break;
     }
     else if (c == '\t'){
