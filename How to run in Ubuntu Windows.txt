@@ -1,0 +1,4 @@
+cd /mnt/c/Users/liban/OneDrive/Desktop/codecrafters-shell-cpp/src/
+g++ main.cpp -o main
+./main
+
