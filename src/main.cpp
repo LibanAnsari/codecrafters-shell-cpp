@@ -129,14 +129,14 @@ void disableRawMode(){
   tcsetattr(STDIN_FILENO, TCSANOW, &term);
 }
 
-void handleTabPress(std::string &input){
+void handleTabPress(string &input){
   if (input == "ech"){
     input = "echo ";
-    std::cout << "o ";
+    cout << "o ";
   }
   else if (input == "exi"){
     input = "exit ";
-    std::cout << "t ";
+    cout << "t ";
   }
 }
 
@@ -203,7 +203,7 @@ int main(){
       if (tokens.size() < 2)
         continue;
       string cmd = tokens[1];
-      if (cmd == "echo" or cmd == "exit" or cmd == "type" or cmd == "pwd" or cmd == "cd"){
+      if (find(commandList.begin(), commandList.end(), cmd) != commandList.end()){
         cout << cmd << " is a shell builtin" << endl;
       }
       else{
